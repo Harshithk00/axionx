@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BookOpen, Brain, FileText, MessageSquare } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react"
+import { set } from "react-hook-form"
 
 // Mock user data
 const userData = {
@@ -24,6 +26,51 @@ const userData = {
 }
 
 export default function DashboardPage() {
+  const [user, setUser] = useState({});
+  useEffect(() => {
+    async function fetchUser() {
+      const res = await fetch('/api/dashboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        userData.username = data.user.username;
+        userData.fieldOfStudy = data.user.fos;
+        if (data.user) {
+          if (data.user.year == '1') {
+            data.user.year = 'First Year';
+          } else if (data.user.year == '2') {
+            data.user.year = 'Second Year';
+          } else if (data.user.year == '3') {
+            data.user.year = 'Third Year';
+          } else if (data.user.year == '4') {
+            data.user.year = 'Fourth Year';
+          }
+        }
+        userData.year = data.user.year;
+        
+        const weakTopics1 = data.user.weaktopics.split(",");
+        console.log(weakTopics1);
+        const scoresarr = JSON.parse(data.user.scores);
+
+
+        setUser(userData);
+        userData.score = data.user.score;
+        userData.weakTopics = weakTopics1;
+        userData.scoreHistory = scoresarr;
+        console.log(data.user); // { username, fos, year }
+      } else {
+        console.error(data.error);
+      }
+    }
+  
+    fetchUser();
+  }, []);
+
   const router = useRouter()
 
   const startWeakTopicTest = (topic) => {

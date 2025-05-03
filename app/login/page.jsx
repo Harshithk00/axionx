@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+// import { cookies } from 'next/headers';
 
 export default function LoginPage() {
   const router = useRouter()
+  const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -20,12 +23,47 @@ export default function LoginPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault()
-    console.log("Login submitted:", formData)
+    
     // In a real app, you would authenticate with your backend
     // For now, we'll just redirect to the dashboard
-    router.push("/dashboard")
+    console.log("Form submitted:", formData)
+    if (!formData.username || !formData.password) {
+      // console.log("Form submitted2:", formData)
+      setErrorMessage('Email and password are required');
+      return;
+    }
+    // console.log("Form submitted:", formData)
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      // Sending the data to the API
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      console.log(response);
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccessMessage(data.message);
+        // Store the token (could be in localStorage or cookies)
+        // const token = cookies().get('token')?.value;
+        localStorage.setItem('token', data.token);
+        
+        router.push("/dashboard")
+      } else {
+        setErrorMessage(data.error);
+      }
+    } catch (error) {
+      setErrorMessage('An error occurred while logging in');
+    }
+    
   }
 
   return (
@@ -33,13 +71,15 @@ export default function LoginPage() {
       <Card className="w-full max-w-lg border-2">
         <CardHeader>
           <CardTitle className="text-3xl">Log In</CardTitle>
+          {errorMessage && <div className="text-red-500 text-lg">{errorMessage}</div>}
+          {successMessage && <div className="text-green-500 text-lg">{successMessage}</div>}
           <CardDescription className="text-lg">Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="username" className="text-lg">
-                Username
+                Email
               </Label>
               <Input
                 id="username"

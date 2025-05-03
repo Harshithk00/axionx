@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, BookOpen, Brain, FileText, MessageSquare, Upload, ChevronDown, ChevronUp } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { set } from "react-hook-form"
 
 export default function SummarizerPage() {
   const [files, setFiles] = useState([]);
   const [text, setText] = useState("")
+  const [pdfcontent, setPdfContent] = useState("")
   const [summary, setSummary] = useState("")
   const [importantQuestions, setImportantQuestions] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -88,8 +90,11 @@ useEffect(() => {
       
       const data = await response.json();
 
-      console.log("Response data:", data);
-      setResults(data.results);
+      // console.log("Response data:", data.results);
+      setPdfContent(data.pdf_content);
+      // console.log("PDF Content:", data.pdf_content);
+      setSummary(data.results.summary);
+      setImportantQuestions(data.results.qa_pairs);
     } catch (err) {
       console.error('Error uploading files:', err);
       setError(`Error processing files: ${err.message}`);
@@ -106,9 +111,26 @@ useEffect(() => {
     }))
   }
 
-  const handleTakeTest = () => {
+  const handleTakeTest = async () => {
     // In a real app, this would set up a test based on the summarized content
-    localStorage.setItem("testSource", "summarized_content")
+
+    const response = await fetch("http://localhost:5001/generate_questions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", 
+      },
+      body: JSON.stringify({ text: pdfcontent })
+    });
+    
+    // console.log("Response:", response)
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+    
+    const data = await response.json();
+
+    console.log("Response data:", data.data.questions);
+    localStorage.setItem("PDFtext", JSON.stringify(data.data));
     router.push("/test")
   }
 

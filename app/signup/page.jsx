@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function SignupPage() {
   const router = useRouter()
+  const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -25,19 +28,51 @@ export default function SignupPage() {
   }
 
   const handleFieldChange = (value) => {
+    
     setFormData((prev) => ({ ...prev, fieldOfStudy: value }))
   }
 
   const handleYearChange = (value) => {
+    
     setFormData((prev) => ({ ...prev, year: value }))
+    
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault()
+    
+    // console.log("Form submitted:", formData)
+    if (!formData.username || !formData.email || !formData.password || !formData.fieldOfStudy || !formData.year) {
+      setErrorMessage('All fields are required');
+      return;
+    }
     console.log("Form submitted:", formData)
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      // Sending the data to the API
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+      console.log("Response data:", data);
+      if (response.ok) {
+        setSuccessMessage(data.message);
+        router.push("/login")
+      } else {
+        setErrorMessage(data.error);
+      }
+    } catch (error) {
+      setErrorMessage('An error occurred while registering the user');
+    }
     // In a real app, you would send this data to your backend
     // For now, we'll just redirect to the dashboard
-    router.push("/dashboard")
   }
 
   return (
@@ -45,6 +80,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-lg border-2">
         <CardHeader>
           <CardTitle className="text-3xl">Sign Up</CardTitle>
+          {errorMessage && <div className="text-red-500 text-lg">{errorMessage}</div>}
           <CardDescription className="text-lg">Create an account to get started with StudyAI</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -147,12 +183,6 @@ export default function SignupPage() {
                   </SelectItem>
                   <SelectItem value="4" className="text-lg">
                     Fourth Year
-                  </SelectItem>
-                  <SelectItem value="5" className="text-lg">
-                    Fifth Year
-                  </SelectItem>
-                  <SelectItem value="pg" className="text-lg">
-                    Postgraduate
                   </SelectItem>
                 </SelectContent>
               </Select>
